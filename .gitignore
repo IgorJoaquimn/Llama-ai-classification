@@ -1,0 +1,33 @@
+# Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Parquet Data Files (Inputs and Outputs)
+*.parquet
+
+# Configuration and Temporary Files
+config_test.yaml
+test_output_*.parquet
+test_input.parquet
+.env
+
+# Hugging Face and Weights
+*.bin
+*.pt
+*.safetensors
+*.onnx
+model/
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store

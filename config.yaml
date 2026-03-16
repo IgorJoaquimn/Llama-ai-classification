@@ -1,0 +1,14 @@
+# Llama AI Classification Configuration
+
+# File Paths
+input_file: "input.parquet"
+output_file: "output.parquet"
+prompt_file: "prompt.txt"
+
+# Model Configuration
+model_id: "Qwen/Qwen2.5-0.5B-Instruct"
+max_new_tokens: 512
+
+# Hardware Configuration
+# Use "auto" to automatically detect GPU, or "cpu" / "cuda" to force a device.
+device: "auto"
