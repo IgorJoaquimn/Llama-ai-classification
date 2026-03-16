@@ -1,8 +1,8 @@
 # Llama AI Classification Configuration
 
 # File Paths
-input_file: "input.parquet"
-output_file: "output.parquet"
+input_file: "data/input.parquet"
+output_file: "data/output.parquet"
 prompt_file: "prompt.txt"
 
 # Model Configuration

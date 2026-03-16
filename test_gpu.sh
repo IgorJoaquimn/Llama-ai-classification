@@ -30,7 +30,7 @@ output_file: "${OUTPUT_FILE}"
 prompt_file: "prompt.txt"
 model_id: "Qwen/Qwen2.5-0.5B-Instruct"
 max_new_tokens: 256
-batch_size: 1
+batch_size: 8
 device: "auto"
 EOF
 

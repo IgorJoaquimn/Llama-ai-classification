@@ -9,6 +9,8 @@ This repository uses local Llama models via `transformers` to classify text tran
 ├── src/
 │   ├── main.py            # Core classification logic
 │   └── download_model.py  # Script to pre-download model to cache
+├── data/                  # Input and output Parquet files
+├── tmp/                   # Temporary test and runtime files
 ├── config.yaml            # Main project configuration
 ├── prompt.txt             # Classification system prompt
 ├── test_gpu.sh            # End-to-end test script with 5 samples
