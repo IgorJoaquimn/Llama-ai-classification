@@ -48,6 +48,9 @@ def main():
     model_id = config.get("model_id", "Qwen/Qwen2.5-0.5B-Instruct")
     prompt_file = config.get("prompt_file", "prompt.txt")
     max_new_tokens = config.get("max_new_tokens", 512)
+    batch_size = config.get("batch_size", 1)
+    quantization = config.get("quantization", "none")
+    use_flash_attention = config.get("use_flash_attention", False)
     device_setting = config.get("device", "auto")
 
     # Determine device
@@ -67,11 +70,23 @@ def main():
     console.print(f"[bold blue]Step 3:[/bold blue] Initializing model [cyan]{model_id}[/cyan]...")
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_id)
+        # Fix padding for batching
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+            tokenizer.pad_token_id = tokenizer.eos_token_id
         
-        # Using model_kwargs to avoid torch_dtype deprecation warning
+        # Using model_kwargs for dtype and quantization
         model_kwargs = {
             "torch_dtype": torch.bfloat16 if torch.cuda.is_available() else torch.float32,
         }
+        
+        if use_flash_attention:
+            model_kwargs["attn_implementation"] = "flash_attention_2"
+
+        if quantization == "4bit":
+            model_kwargs["load_in_4bit"] = True
+        elif quantization == "8bit":
+            model_kwargs["load_in_8bit"] = True
         
         pipe = pipeline(
             "text-generation",
@@ -105,64 +120,58 @@ def main():
         processed_indices = []
         console.print("[green]✓[/green] Starting fresh processing.")
 
-    # Processing Loop
-    console.print(Rule(title="[bold yellow]Processing Transcripts[/bold yellow]"))
+    # Filter only new data to process
+    df_to_process = df_input[~df_input.index.isin(processed_indices)]
     
-    # Iterate through rows
-    for index, row in tqdm(df_input.iterrows(), total=len(df_input), desc="Classifying"):
-        if index in processed_indices:
-            continue
-
-        transcript = row['transcript']
+    if df_to_process.empty:
+        console.print("[green]All rows already processed![/green]")
+    else:
+        # Processing Loop
+        console.print(Rule(title=f"[bold yellow]Processing Transcripts (Batch Size: {batch_size})[/bold yellow]"))
         
-        # Construct messages for Chat-based models
-        messages = [
-            {"role": "system", "content": prompt_template},
-            {"role": "user", "content": f"Transcript:\n{transcript}"}
-        ]
-        
-        # Generate response
-        try:
-            prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-            # Setting max_length=None to avoid warnings when max_new_tokens is provided
-            outputs = pipe(prompt, max_new_tokens=max_new_tokens, do_sample=False, max_length=None)
-            response_text = outputs[0]["generated_text"][len(prompt):].strip()
-        except Exception as e:
-            console.print(f"[yellow]![/yellow] Error with chat template: {e}")
-            # Fallback
-            full_prompt = f"{prompt_template}\n\nTranscript:\n{transcript}\n\nJSON Output:"
-            outputs = pipe(full_prompt, max_new_tokens=max_new_tokens, do_sample=False, max_length=None)
-            response_text = outputs[0]["generated_text"][len(full_prompt):].strip()
+        def data_generator():
+            for _, row in df_to_process.iterrows():
+                messages = [
+                    {"role": "system", "content": prompt_template},
+                    {"role": "user", "content": f"Transcript:\n{row['transcript']}"}
+                ]
+                yield tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
-        # Try to parse JSON
-        try:
-            # Clean response text in case of markdown blocks
-            if "```json" in response_text:
-                response_text = response_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in response_text:
-                response_text = response_text.split("```")[1].split("```")[0].strip()
+        results_iterator = pipe(
+            data_generator(),
+            batch_size=batch_size,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            max_length=None,
+            return_full_text=False
+        )
+
+        for (index, row), result in zip(df_to_process.iterrows(), tqdm(results_iterator, total=len(df_to_process), desc="Classifying")):
+            response_text = result[0]["generated_text"].strip()
+
+            try:
+                if "```json" in response_text:
+                    response_text = response_text.split("```json")[1].split("```")[0].strip()
+                elif "```" in response_text:
+                    response_text = response_text.split("```")[1].split("```")[0].strip()
+                
+                parsed_result = json.loads(response_text)
+            except Exception as e:
+                console.print(f"[yellow]![/yellow] Error parsing JSON for row {index}: {e}")
+                parsed_result = {
+                    "summary": "Error parsing",
+                    "keywords": [],
+                    "is_ai_related": None,
+                    "is_ai_generated_content": None,
+                    "topics": []
+                }
+
+            row_result = row.to_dict()
+            row_result.update(parsed_result)
             
-            result = json.loads(response_text)
-        except Exception as e:
-            print(f"Error parsing JSON for row {index}: {e}")
-            print(f"Raw response: {response_text}")
-            result = {
-                "summary": "Error parsing",
-                "keywords": [],
-                "is_ai_related": None,
-                "is_ai_generated_content": None,
-                "topics": []
-            }
-
-        # Add result to row and append to output dataframe
-        row_result = row.to_dict()
-        row_result.update(result)
-        
-        df_new_row = pd.DataFrame([row_result], index=[index])
-        df_output = pd.concat([df_output, df_new_row])
-        
-        # Save after each row for resume capability
-        df_output.to_parquet(output_file)
+            df_new_row = pd.DataFrame([row_result], index=[index])
+            df_output = pd.concat([df_output, df_new_row])
+            df_output.to_parquet(output_file)
 
     console.print(Rule(title="[bold green]Processing Complete[/bold green]"))
     console.print(Panel(f"Results saved to [bold cyan]{output_file}[/bold cyan]", title="Success", border_style="green"))
