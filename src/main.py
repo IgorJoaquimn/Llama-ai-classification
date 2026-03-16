@@ -5,6 +5,7 @@ import sys
 import pandas as pd
 import torch
 import warnings
+import time
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, logging as hf_logging
 from tqdm import tqdm
 from rich.console import Console
@@ -14,7 +15,7 @@ from rich.rule import Rule
 # Silence warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
-hf_logging.set_verbosity_error()  # Silence HF internal warnings
+hf_logging.set_verbosity_error()
 
 console = Console()
 
@@ -38,6 +39,12 @@ def load_prompt(prompt_file):
     console.print("[green]✓[/green] Prompt loaded successfully.")
     return content
 
+def safe_save(df, path):
+    """Saves a dataframe to parquet atomically using a temp file."""
+    temp_path = f"{path}.tmp"
+    df.to_parquet(temp_path)
+    os.replace(temp_path, path)
+
 def main():
     console.print(Rule(title="[bold magenta]Llama AI Classification Pipeline[/bold magenta]"))
     
@@ -49,8 +56,8 @@ def main():
         console.print(f"[bold red]Error loading config:[/bold red] {e}")
         return
 
-    input_file = config.get("input_file", "input.parquet")
-    output_file = config.get("output_file", "output.parquet")
+    input_file = config.get("input_file", "data/input.parquet")
+    output_file = config.get("output_file", "data/output.parquet")
     model_id = config.get("model_id", "Qwen/Qwen2.5-0.5B-Instruct")
     prompt_file = config.get("prompt_file", "prompt.txt")
     max_new_tokens = config.get("max_new_tokens", 512)
@@ -58,6 +65,8 @@ def main():
     quantization = config.get("quantization", "none")
     use_flash_attention = config.get("use_flash_attention", False)
     device_setting = config.get("device", "auto")
+    # Added for testing purposes to slow down the loop if needed
+    debug_sleep = config.get("debug_sleep", 0)
 
     # Determine device
     if device_setting == "auto":
@@ -80,7 +89,6 @@ def main():
             tokenizer.pad_token = tokenizer.eos_token
             tokenizer.pad_token_id = tokenizer.eos_token_id
         
-        # Using model_kwargs for dtype and quantization
         model_kwargs = {
             "torch_dtype": torch.bfloat16 if torch.cuda.is_available() else torch.float32,
         }
@@ -96,6 +104,7 @@ def main():
         pipe = pipeline(
             "text-generation",
             model=model_id,
+            tokenizer=tokenizer,
             model_kwargs=model_kwargs,
             device_map=device_map,
         )
@@ -107,9 +116,8 @@ def main():
     # Load data
     console.print(f"[bold blue]Step 4:[/bold blue] Loading input data from [cyan]{input_file}[/cyan]...")
     if not os.path.exists(input_file):
-        console.print("[yellow]![/yellow] Input file not found. Creating a dummy one for demonstration.")
-        df_dummy = pd.DataFrame({"transcript": ["This is a video about AI and robots in the future.", "A tutorial on how to use Python for data science."] * 5})
-        df_dummy.to_parquet(input_file)
+        console.print("[bold red]Error:[/bold red] Input file not found.")
+        return
 
     df_input = pd.read_parquet(input_file)
     console.print(f"[green]✓[/green] Loaded {len(df_input)} rows.")
@@ -135,28 +143,53 @@ def main():
     
     if df_to_process.empty:
         console.print("[green]All rows already processed![/green]")
-    else:
-        # Processing Loop
-        console.print(Rule(title=f"[bold yellow]Processing Transcripts (Batch Size: {batch_size})[/bold yellow]"))
+        return
+
+    # Processing Loop
+    console.print(Rule(title=f"[bold yellow]Processing Transcripts (Batch Size: {batch_size})[/bold yellow]"))
+    
+    def data_generator():
+        for _, row in df_to_process.iterrows():
+            messages = [
+                {"role": "system", "content": prompt_template},
+                {"role": "user", "content": f"Transcript:\n{row['transcript']}"}
+            ]
+            yield tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+
+    # Create the pipeline iterator
+    results_iterator = pipe(
+        data_generator(),
+        batch_size=batch_size,
+        max_new_tokens=max_new_tokens,
+        do_sample=False,
+        max_length=None,
+        return_full_text=False
+    )
+
+    try:
+        save_interval = 10
+        total_to_process = len(df_to_process)
         
-        def data_generator():
-            for _, row in df_to_process.iterrows():
-                messages = [
-                    {"role": "system", "content": prompt_template},
-                    {"role": "user", "content": f"Transcript:\n{row['transcript']}"}
-                ]
-                yield tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-
-        results_iterator = pipe(
-            data_generator(),
-            batch_size=batch_size,
-            max_new_tokens=max_new_tokens,
-            do_sample=False,
-            max_length=None,
-            return_full_text=False
+        # Canonical tqdm setup for maximum responsiveness
+        # miniters=1 forces update on every iteration
+        # mininterval=0 removes any time-based update throttling
+        pbar = tqdm(
+            total=total_to_process, 
+            desc="Classifying", 
+            dynamic_ncols=True, 
+            miniters=1, 
+            mininterval=0,
+            file=sys.stdout
         )
-
-        for (index, row), result in zip(df_to_process.iterrows(), tqdm(results_iterator, total=len(df_to_process), desc="Classifying")):
+        
+        # Track indices and rows for synchronization
+        to_process_indices = df_to_process.index.tolist()
+        to_process_rows = [row for _, row in df_to_process.iterrows()]
+        
+        for i, result in enumerate(results_iterator):
+            index = to_process_indices[i]
+            row = to_process_rows[i]
+            
             response_text = result[0]["generated_text"].strip()
 
             try:
@@ -166,10 +199,9 @@ def main():
                     response_text = response_text.split("```")[1].split("```")[0].strip()
                 
                 parsed_result = json.loads(response_text)
-            except Exception as e:
-                console.print(f"[yellow]![/yellow] Error parsing JSON for row {index}: {e}")
+            except Exception:
                 parsed_result = {
-                    "summary": "Error parsing",
+                    "summary": f"Error parsing: {response_text[:100]}",
                     "keywords": [],
                     "is_ai_related": None,
                     "is_ai_generated_content": None,
@@ -181,7 +213,32 @@ def main():
             
             df_new_row = pd.DataFrame([row_result], index=[index])
             df_output = pd.concat([df_output, df_new_row])
-            df_output.to_parquet(output_file)
+            
+            if (i + 1) % save_interval == 0:
+                safe_save(df_output, output_file)
+            
+            pbar.update(1)
+            
+            # Artificial delay for testing if requested
+            if debug_sleep > 0:
+                time.sleep(debug_sleep)
+        
+        pbar.close()
+
+        # Final save
+        safe_save(df_output, output_file)
+        
+    except KeyboardInterrupt:
+        console.print("\n[bold yellow]Stop requested. Saving progress...[/bold yellow]")
+        if 'df_output' in locals():
+            safe_save(df_output, output_file)
+        console.print(f"[green]✓[/green] Progress saved. You can resume later.")
+        sys.exit(0)
+    except Exception as e:
+        console.print(f"\n[bold red]Error:[/bold red] {e}")
+        if 'df_output' in locals():
+            safe_save(df_output, output_file)
+        sys.exit(1)
 
     console.print(Rule(title="[bold green]Processing Complete[/bold green]"))
     console.print(Panel(f"Results saved to [bold cyan]{output_file}[/bold cyan]", title="Success", border_style="green"))
