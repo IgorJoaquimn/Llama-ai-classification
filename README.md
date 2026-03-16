@@ -2,6 +2,20 @@
 
 This repository uses local Llama models via `transformers` to classify text transcripts stored in Parquet files. It is managed using `uv`.
 
+## File Structure
+
+```text
+.
+├── src/
+│   ├── main.py            # Core classification logic
+│   └── download_model.py  # Script to pre-download model to cache
+├── config.yaml            # Main project configuration
+├── prompt.txt             # Classification system prompt
+├── test_gpu.sh            # End-to-end test script with 5 samples
+├── pyproject.toml         # uv project configuration
+└── README.md              # Documentation
+```
+
 ## Setup
 
 1.  **Install uv**:
@@ -12,32 +26,32 @@ This repository uses local Llama models via `transformers` to classify text tran
     uv sync
     ```
 
-3.  **Hugging Face Login** (Optional, but recommended for model access):
+3.  **Hugging Face Login**:
+    Required to access Llama models or gated repositories.
     ```bash
-    uv run huggingface-cli login
+    uv run hf auth login
+    ```
+
+4.  **Download Model (Optional but recommended)**:
+    Pre-cache the model to avoid slow downloads during execution.
+    ```bash
+    uv run python src/download_model.py
     ```
 
 ## Usage
 
 1.  **Prepare Input**:
-    Place your input data in a file named `input.parquet`. It should have a column named `transcript`.
+    Place your input data in a file named `input.parquet` (or configure via `config.yaml`). It should have a column named `transcript`.
 
 2.  **Run Classification**:
     ```bash
-    uv run main.py
+    uv run python src/main.py
     ```
 
-The script will:
-- Load the specified Llama model (default: `meta-llama/Llama-3.2-1B-Instruct`).
-- Read the prompt from `prompt.txt`.
-- Process each row in `input.parquet`.
-- Save results to `output.parquet`.
-- **Resume Capability**: If the script is stopped, it will resume from the last processed row by checking `output.parquet`.
+## Test
 
-## Configuration
-
-You can adjust the following in `main.py`:
-- `INPUT_FILE`: Name of the input Parquet file.
-- `OUTPUT_FILE`: Name of the output Parquet file.
-- `MODEL_ID`: The Hugging Face model ID to use.
-- `PROMPT_FILE`: The file containing the system prompt.
+To verify your environment (especially GPU/CUDA), run the provided test script:
+```bash
+./test_gpu.sh
+```
+This will create a temporary dataset, run 5 examples, and display a summary table of the results.

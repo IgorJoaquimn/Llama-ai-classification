@@ -33,7 +33,7 @@ EOF
 
 # Run the classification for 5 examples
 echo "Running Llama classification for 5 examples..."
-uv run python3 main.py config_test.yaml
+uv run python3 src/main.py config_test.yaml
 
 # Display the results
 echo "Displaying results from ${OUTPUT_FILE}..."
