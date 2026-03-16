@@ -4,11 +4,17 @@ import yaml
 import sys
 import pandas as pd
 import torch
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
+import warnings
+from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, logging as hf_logging
 from tqdm import tqdm
 from rich.console import Console
 from rich.panel import Panel
 from rich.rule import Rule
+
+# Silence warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+hf_logging.set_verbosity_error()  # Silence HF internal warnings
 
 console = Console()
 
@@ -70,7 +76,6 @@ def main():
     console.print(f"[bold blue]Step 3:[/bold blue] Initializing model [cyan]{model_id}[/cyan]...")
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_id)
-        # Fix padding for batching
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
             tokenizer.pad_token_id = tokenizer.eos_token_id
@@ -109,6 +114,11 @@ def main():
     df_input = pd.read_parquet(input_file)
     console.print(f"[green]✓[/green] Loaded {len(df_input)} rows.")
     
+    # Ensure output directory exists
+    output_dir = os.path.dirname(output_file)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     # Resume capability
     console.print(f"[bold blue]Step 5:[/bold blue] Checking for existing results in [cyan]{output_file}[/cyan]...")
     if os.path.exists(output_file):

@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 
-# Create a small test parquet with 5 examples
-echo "Creating test data..."
+# Create a small test parquet with 5 examples in tmp/
+echo "Creating test data in tmp/..."
+mkdir -p tmp
 uv run python3 <<EOF
 import pandas as pd
 df = pd.DataFrame({
@@ -14,26 +15,28 @@ df = pd.DataFrame({
         "The impact of artificial intelligence on the job market."
     ]
 })
-df.to_parquet("test_input.parquet")
+df.to_parquet("tmp/test_input.parquet")
 EOF
 
-# Create a test config with timestamped output
+# Create a test config with timestamped output in tmp/
 TIMESTAMP=$(date +%s)
-OUTPUT_FILE="test_output_${TIMESTAMP}.parquet"
+OUTPUT_FILE="tmp/test_output_${TIMESTAMP}.parquet"
+CONFIG_FILE="tmp/config_test.yaml"
 
-echo "Creating test config with output: ${OUTPUT_FILE}..."
-cat > config_test.yaml <<EOF
-input_file: "test_input.parquet"
+echo "Creating test config: ${CONFIG_FILE}..."
+cat > ${CONFIG_FILE} <<EOF
+input_file: "tmp/test_input.parquet"
 output_file: "${OUTPUT_FILE}"
 prompt_file: "prompt.txt"
 model_id: "Qwen/Qwen2.5-0.5B-Instruct"
 max_new_tokens: 256
+batch_size: 1
 device: "auto"
 EOF
 
 # Run the classification for 5 examples
 echo "Running Llama classification for 5 examples..."
-uv run python3 src/main.py config_test.yaml
+uv run python3 src/main.py ${CONFIG_FILE}
 
 # Display the results
 echo "Displaying results from ${OUTPUT_FILE}..."
@@ -62,7 +65,4 @@ for i, row in df.iterrows():
 console.print(table)
 EOF
 
-# Clean up test files
-echo "Cleaning up..."
-# rm test_input.parquet config_test.yaml
 echo "Test complete. Results in ${OUTPUT_FILE}"
