@@ -8,7 +8,7 @@ prompt_file: "prompt.txt"
 # Model Configuration
 model_id: "Qwen/Qwen2.5-0.5B-Instruct"
 max_new_tokens: 512
-batch_size: 1  # Increase this based on your VRAM (e.g., 8, 16, 32)
+batch_size: 8  # Increase this based on your VRAM (e.g., 8, 16, 32)
 quantization: "none" # Options: "4bit", "8bit", "none"
 
 # Hardware Configuration

@@ -27,7 +27,7 @@ output_file: "${OUTPUT_FILE}"
 prompt_file: "prompt.txt"
 model_id: "Qwen/Qwen2.5-0.5B-Instruct"
 max_new_tokens: 128
-batch_size: 1
+batch_size: 8
 device: "auto"
 debug_sleep: 0.2  # Add a small delay so we can see the bar move
 EOF

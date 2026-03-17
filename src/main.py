@@ -7,10 +7,10 @@ import torch
 import warnings
 import time
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, logging as hf_logging
-from tqdm import tqdm
 from rich.console import Console
 from rich.panel import Panel
 from rich.rule import Rule
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
 
 # Silence warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -170,61 +170,58 @@ def main():
         save_interval = 10
         total_to_process = len(df_to_process)
         
-        # Canonical tqdm setup for maximum responsiveness
-        # miniters=1 forces update on every iteration
-        # mininterval=0 removes any time-based update throttling
-        pbar = tqdm(
-            total=total_to_process, 
-            desc="Classifying", 
-            dynamic_ncols=True, 
-            miniters=1, 
-            mininterval=0,
-            file=sys.stdout
-        )
-        
         # Track indices and rows for synchronization
         to_process_indices = df_to_process.index.tolist()
         to_process_rows = [row for _, row in df_to_process.iterrows()]
         
-        for i, result in enumerate(results_iterator):
-            index = to_process_indices[i]
-            row = to_process_rows[i]
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            TimeRemainingColumn(),
+            console=console,
+            transient=False
+        ) as progress:
+            task = progress.add_task("[yellow]Classifying transcripts...", total=total_to_process)
             
-            response_text = result[0]["generated_text"].strip()
-
-            try:
-                if "```json" in response_text:
-                    response_text = response_text.split("```json")[1].split("```")[0].strip()
-                elif "```" in response_text:
-                    response_text = response_text.split("```")[1].split("```")[0].strip()
+            for i, result in enumerate(results_iterator):
+                index = to_process_indices[i]
+                row = to_process_rows[i]
                 
-                parsed_result = json.loads(response_text)
-            except Exception:
-                parsed_result = {
-                    "summary": f"Error parsing: {response_text[:100]}",
-                    "keywords": [],
-                    "is_ai_related": None,
-                    "is_ai_generated_content": None,
-                    "topics": []
-                }
+                response_text = result[0]["generated_text"].strip()
 
-            row_result = row.to_dict()
-            row_result.update(parsed_result)
-            
-            df_new_row = pd.DataFrame([row_result], index=[index])
-            df_output = pd.concat([df_output, df_new_row])
-            
-            if (i + 1) % save_interval == 0:
-                safe_save(df_output, output_file)
-            
-            pbar.update(1)
-            
-            # Artificial delay for testing if requested
-            if debug_sleep > 0:
-                time.sleep(debug_sleep)
+                try:
+                    if "```json" in response_text:
+                        response_text = response_text.split("```json")[1].split("```")[0].strip()
+                    elif "```" in response_text:
+                        response_text = response_text.split("```")[1].split("```")[0].strip()
+                    
+                    parsed_result = json.loads(response_text)
+                except Exception:
+                    parsed_result = {
+                        "summary": f"Error parsing: {response_text[:100]}",
+                        "keywords": [],
+                        "is_ai_related": None,
+                        "is_ai_generated_content": None,
+                        "topics": []
+                    }
+
+                row_result = row.to_dict()
+                row_result.update(parsed_result)
+                
+                df_new_row = pd.DataFrame([row_result], index=[index])
+                df_output = pd.concat([df_output, df_new_row])
+                
+                if (i + 1) % save_interval == 0:
+                    safe_save(df_output, output_file)
+                
+                progress.update(task, advance=1)
+                
+                # Artificial delay for testing if requested
+                if debug_sleep > 0:
+                    time.sleep(debug_sleep)
         
-        pbar.close()
-
         # Final save
         safe_save(df_output, output_file)
         

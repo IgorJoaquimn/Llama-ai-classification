@@ -20,25 +20,20 @@ This repository uses local Llama models via `transformers` to classify text tran
 
 ## Setup
 
-1.  **Install uv**:
-    If you haven't already, install [uv](https://github.com/astral-sh/uv).
+The easiest way to get started is by using the automated setup script:
 
-2.  **Sync Dependencies**:
-    ```bash
-    uv sync
-    ```
+```bash
+./setup.sh
+```
 
-3.  **Hugging Face Login**:
-    Required to access Llama models or gated repositories.
-    ```bash
-    uv run hf auth login
-    ```
+This script will:
+1.  **Check for uv**: If not installed, it will guide you through the process.
+2.  **Sync Dependencies**: Install Python and all required packages.
+3.  **Prepare Workspace**: Create necessary `data/` and `tmp/` folders.
+4.  **Hugging Face Login**: Prompt for login if you need gated models.
+5.  **Download Model**: Optionally pre-cache the model to avoid slow runs.
 
-4.  **Download Model (Optional but recommended)**:
-    Pre-cache the model to avoid slow downloads during execution.
-    ```bash
-    uv run python src/download_model.py
-    ```
+Alternatively, you can follow these manual steps:
 
 ## Usage
 
