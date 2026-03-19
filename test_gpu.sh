@@ -25,11 +25,11 @@ cat > ${CONFIG_FILE} <<EOF
 input_file: "tmp/test_input.parquet"
 output_file: "${OUTPUT_FILE}"
 prompt_file: "prompt.txt"
-model_id: "Qwen/Qwen2.5-0.5B-Instruct"
+model_id: "meta-llama/Llama-3.1-8B-Instruct"
 max_new_tokens: 128
 batch_size: 8
 device: "auto"
-debug_sleep: 0.2  # Add a small delay so we can see the bar move
+gpu_memory_utilization: 0.8 # Llama 8B is larger, let's be safe with memory during test
 EOF
 
 # Run the classification for 20 examples

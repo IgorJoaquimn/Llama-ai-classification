@@ -1,4 +1,4 @@
-# Llama AI Classification Configuration
+# AI Classification Configuration (vLLM)
 
 # File Paths
 input_file: "data/df_videos_transcript.parquet"
@@ -6,12 +6,11 @@ output_file: "data/output_classification.parquet"
 prompt_file: "prompt.txt"
 
 # Model Configuration
-model_id: "Qwen/Qwen2.5-0.5B-Instruct"
+model_id: "meta-llama/Llama-3.1-8B-Instruct"
 max_new_tokens: 512
-batch_size: 8  # Increase this based on your VRAM (e.g., 8, 16, 32)
-quantization: "none" # Options: "4bit", "8bit", "none"
+quantization: "none" # options: awq, gptq, fp8, marlin, none
 
-# Hardware Configuration
-device: "auto"
-# Use Flash Attention 2 for faster processing (requires Ampere GPU or newer)
-use_flash_attention: false
+# vLLM Performance Configuration
+gpu_memory_utilization: 0.9  # Use 90% of VRAM for KV cache
+chunk_size: 100              # Number of prompts to process before saving
+row_limit: 0              # Max rows to process in a single run (0 for unlimited)
