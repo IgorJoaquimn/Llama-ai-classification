@@ -1,54 +1,105 @@
-# Llama AI Classification
+# Llama AI Classification Pipeline
 
-This repository uses local Llama models via `transformers` to classify text transcripts stored in Parquet files. It is managed using `uv`.
+This project is a high-performance tool designed to classify YouTube video titles and transcripts using Artificial Intelligence. It uses a local Llama 3.1 8B model and the **vLLM** engine to process thousands of rows quickly and accurately.
 
-## File Structure
+## 🚀 Getting Started
 
-```text
-.
-├── src/
-│   ├── main.py            # Core classification logic
-│   └── download_model.py  # Script to pre-download model to cache
-├── data/                  # Input and output Parquet files
-├── tmp/                   # Temporary test and runtime files
-├── config.yaml            # Main project configuration
-├── prompt.txt             # Classification system prompt
-├── test_gpu.sh            # End-to-end test script with 5 samples
-├── pyproject.toml         # uv project configuration
-└── README.md              # Documentation
-```
+We use **uv**, a modern and extremely fast Python package manager. It handles everything: installing Python, managing libraries, and running the project in a "virtual environment" so it doesn't mess up your computer's system settings.
 
-## Setup
-
-The easiest way to get started is by using the automated setup script:
-
+### 1. Install `uv`
+If you don't have it yet, run this command in your terminal:
 ```bash
-./setup.sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
+*After installing, close and reopen your terminal.*
 
-This script will:
-1.  **Check for uv**: If not installed, it will guide you through the process.
-2.  **Sync Dependencies**: Install Python and all required packages.
-3.  **Prepare Workspace**: Create necessary `data/` and `tmp/` folders.
-4.  **Hugging Face Login**: Prompt for login if you need gated models.
-5.  **Download Model**: Optionally pre-cache the model to avoid slow runs.
-
-Alternatively, you can follow these manual steps:
-
-## Usage
-
-1.  **Prepare Input**:
-    Place your input data in a file named `input.parquet` (or configure via `config.yaml`). It should have a column named `transcript`.
-
-2.  **Run Classification**:
-    ```bash
-    uv run python src/main.py
-    ```
-
-## Test
-
-To verify your environment (especially GPU/CUDA), run the provided test script:
+### 2. Setup the Project
+Once you are inside the project folder, run:
 ```bash
-./test_gpu.sh
+uv sync
 ```
-This will create a temporary dataset, run 5 examples, and display a summary table of the results.
+This will automatically install the correct version of Python and all the necessary AI libraries (like vLLM and PyTorch).
+
+---
+
+## 📂 Project Organization
+
+- **`data/input/`**: Place your `.parquet` or `.csv` files here.
+- **`data/output/`**: This is where the results (`output_classification.parquet`) will be saved.
+- **`src/main.py`**: The "brain" of the project that runs the classification.
+- **`config.yaml`**: The "control panel" where you change settings.
+- **`prompt.txt`**: The "instructions" we give to the AI model.
+- **`logs/`**: Detailed records of every run for troubleshooting.
+- **`eda_classification.ipynb`**: A Jupyter Notebook to visualize and analyze your results.
+
+---
+
+## ⚙️ How to Use the Configuration (`config.yaml`)
+
+You don't need to touch the code to change how the pipeline works. Just open `config.yaml` in any text editor:
+
+- **`input_file`**: The path to your data (e.g., `"data/input/my_videos.parquet"`).
+- **`output_file`**: Where you want the results saved.
+- **`model_id`**: Which AI model to use (default is Llama 3.1 8B).
+- **`gpu_memory_utilization`**: Set this to `0.9` (90%) to give the AI plenty of "thinking space" on your GPU.
+- **`row_limit`**: Set to `0` to process the entire file, or a small number (like `10`) for a quick test.
+- **`chunk_size`**: How many rows to process before saving (default is `100`).
+
+---
+
+## 🏃 Running the Pipeline
+
+To start the classification, use:
+```bash
+uv run python src/main.py
+```
+
+### Running in the Background
+If you have a large dataset (thousands of rows) and want to let it run while you do other things (or even close your terminal), use:
+```bash
+nohup uv run python src/main.py > logs/classification.log 2>&1 &
+```
+You can check the progress anytime by looking at the log:
+```bash
+tail -f logs/classification.log
+```
+
+---
+
+## 📊 Monitoring the Process
+
+Since AI classification is "heavy" on your computer's hardware, it is important to monitor your resources:
+
+### 1. Monitoring the GPU (`nvidia-smi`)
+This tool shows you how much Video RAM (VRAM) the model is using and how hard the graphics card is working.
+```bash
+watch -n 1 nvidia-smi
+```
+*Look for "Memory-Usage" and "Volatile Gpu-Util".*
+
+### 2. Monitoring the System (`btop`)
+This is a beautiful, interactive dashboard for your CPU, RAM, and disk usage.
+```bash
+btop
+```
+*If you don't have it, you can install it on Linux with `sudo apt install btop`.*
+
+---
+
+## 🧠 Understanding the Results
+
+The output file will contain your original data plus several new columns created by the AI:
+
+- **`summary`**: A concise overview of the video content.
+- **`is_ai_related`**: A simple `True` or `False`.
+- **`topics`**: Categories assigned to the video (e.g., "Business", "Hardware").
+- **`conf_classification`**: **Model Confidence**. A score from 0 to 1. 
+    - `0.95+`: The model is very certain.
+    - `0.70-0.90`: Generally reliable.
+    - `Below 0.60`: You should probably double-check this one manually!
+- **`conf_rationale`**: How "sure" the model felt while writing its reasoning (Chain of Thought).
+
+---
+
+## 📈 Analyzing the Data
+Open the `eda_classification.ipynb` file in VS Code or any Jupyter environment to see charts, distributions, and a deep-dive analysis of your classified dataset.
