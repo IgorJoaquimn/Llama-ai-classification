@@ -24,6 +24,8 @@ config_test.yaml
 tmp/*
 !tmp/.gitignore
 .env
+!setup.sh
+!test_gpu.sh
 
 # Logs
 logs/

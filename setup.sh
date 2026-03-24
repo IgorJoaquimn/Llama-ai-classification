@@ -60,8 +60,8 @@ fi
 
 # 3. Create necessary directories
 print_header "Step 3: Preparing Workspace"
-mkdir -p data tmp
-print_success "Directories 'data/' and 'tmp/' are ready."
+mkdir -p data/input data/output logs tmp
+print_success "Directories 'data/input/', 'data/output/', 'logs/' and 'tmp/' are ready."
 
 # 4. Hugging Face Authentication check
 print_header "Step 4: Hugging Face Authentication"
@@ -89,11 +89,12 @@ else
 fi
 
 # Summary
+chmod +x test_gpu.sh
 print_header "Setup Complete!"
 echo -e "${GREEN}${BOLD}Your environment is ready!${NC}"
 echo -e ""
 echo -e "${BOLD}Quick Start:${NC}"
-echo -e "  1. Place your data in ${CYAN}data/df_videos_transcript.parquet${NC}"
+echo -e "  1. Place your data in ${CYAN}data/input/df_videos_transcript.parquet${NC}"
 echo -e "  2. Run the pipeline:  ${YELLOW}uv run python src/main.py${NC}"
 echo -e "  3. Run a GPU test:    ${YELLOW}./test_gpu.sh${NC}"
 echo -e ""

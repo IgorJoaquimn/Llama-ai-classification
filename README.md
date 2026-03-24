@@ -14,11 +14,28 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 *After installing, close and reopen your terminal.*
 
 ### 2. Setup the Project
-Once you are inside the project folder, run:
+The easiest way to set up everything (Python, libraries, and folders) is to run the setup script:
 ```bash
-uv sync
+chmod +x setup.sh
+./setup.sh
 ```
-This will automatically install the correct version of Python and all the necessary AI libraries (like vLLM and PyTorch).
+This script will:
+- Install project dependencies using `uv sync`.
+- Create the `data/`, `logs/`, and `tmp/` folders.
+- Optionally log you into Hugging Face to access Llama models.
+- Optionally pre-download the model to save time later.
+
+---
+
+## 🛠️ Verifying your GPU
+
+Before running the full dataset, you should verify that your graphics card (GPU) is working correctly with the AI model. We provide a test script for this:
+
+```bash
+chmod +x test_gpu.sh
+./test_gpu.sh
+```
+This script creates a small fake dataset, runs 5 classifications, and prints a summary table. If you see the table with results, your environment is perfect!
 
 ---
 
