@@ -1,8 +1,8 @@
 # AI Classification Configuration (vLLM)
 
 # File Paths
-input_file: "data/df_videos_transcript.parquet"
-output_file: "data/output_classification.parquet"
+input_file: "data/input/df_videos_transcript.parquet"
+output_file: "data/output/output_classification.parquet"
 prompt_file: "prompt.txt"
 
 # Model Configuration
@@ -13,4 +13,4 @@ quantization: "none" # options: awq, gptq, fp8, marlin, none
 # vLLM Performance Configuration
 gpu_memory_utilization: 0.9  # Use 90% of VRAM for KV cache
 chunk_size: 100              # Number of prompts to process before saving
-row_limit: 0              # Max rows to process in a single run (0 for unlimited)
+row_limit: 0                 # Max rows to process in a single run (0 for unlimited)

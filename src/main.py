@@ -57,10 +57,15 @@ class LlamaClassifier:
         """Converts dataframe rows into chat-templated prompts."""
         prompts = []
         for _, row in df.iterrows():
-            transcript = str(row.get('transcript', ''))[:4000]
+            title = str(row.get('title', 'Unknown Title'))
+            # Using transcript as "Description" since actual description column is missing
+            description = str(row.get('transcript', 'No description available'))[:4000]
+            
+            user_input = f"Title: {title}\nDescription: {description}"
+            
             messages = [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Transcript:\n{transcript}"}
+                {"role": "user", "content": user_input}
             ]
             prompt = self.tokenizer.apply_chat_template(
                 messages, 
@@ -75,53 +80,41 @@ class LlamaClassifier:
         token_ids = generated_output.token_ids
         logprobs_list = generated_output.logprobs
         
-        # 1. Map all logprobs to a flat list
         all_lps = []
         for lp, tid in zip(logprobs_list, token_ids):
             if lp and tid in lp:
                 all_lps.append(lp[tid].logprob)
             else:
-                # Fallback if vLLM output structure varies slightly or token missing
                 all_lps.append(0.0)
 
         if not all_lps:
             return {"conf_total": 0.0, "conf_rationale": 0.0, "conf_classification": 0.0}
 
-        # 2. Token Offset Mapping
         encoding = self.tokenizer(text, return_offsets_mapping=True, add_special_tokens=False)
         offsets = encoding['offset_mapping']
         
-        # 3. Identify Segment Boundaries
         json_start = text.find("```json")
         if json_start == -1:
             json_start = text.find("{")
         if json_start == -1:
             json_start = len(text)
 
-        # Search for classification value: "is_ai_related": true/false
         match = re.search(r'"is_ai_related":\s*(true|false)', text)
         class_start, class_end = (-1, -1)
         if match:
             class_start, class_end = match.start(1), match.end(1)
 
-        # 4. Filter logprobs by segment
         rationale_lps = []
         classification_lps = []
         
-        # Match tokens to text segments
         for i, (start, end) in enumerate(offsets):
             if i >= len(all_lps): break
             lp = all_lps[i]
-            
-            # Rationale (everything before JSON)
             if end <= json_start:
                 rationale_lps.append(lp)
-            
-            # Classification Token (the specific true/false value)
             if class_start != -1 and start >= class_start and end <= class_end:
                 classification_lps.append(lp)
 
-        # 5. Convert Logprobs to Probabilities (Exp Mean)
         def exp_mean(lps):
             return float(np.exp(np.mean(lps))) if lps else 0.0
 
@@ -139,11 +132,7 @@ class LlamaClassifier:
         for output in outputs:
             generated_output = output.outputs[0]
             text = generated_output.text.strip()
-            
-            # Calculate granular confidences
             conf_metrics = self._calculate_detailed_confidences(text, generated_output)
-            
-            # Parse JSON and merge metrics
             parsed = self._parse_json(text)
             parsed.update(conf_metrics)
             results.append(parsed)
@@ -186,8 +175,8 @@ def main():
         config = yaml.safe_load(f)
     
     prompt_template = load_file(config.get("prompt_file", "prompt.txt"))
-    input_path = config.get("input_file", "data/input.parquet")
-    output_path = config.get("output_file", "data/output.parquet")
+    input_path = config.get("input_file", "data/input/df_videos_transcript.parquet")
+    output_path = config.get("output_file", "data/output/output_classification.parquet")
     
     classifier = LlamaClassifier(config)
     
