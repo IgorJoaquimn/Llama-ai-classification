@@ -3,7 +3,6 @@ import json
 import yaml
 import sys
 import re
-import numpy as np
 import pandas as pd
 import torch
 import warnings
@@ -12,7 +11,6 @@ from vllm import LLM, SamplingParams
 from transformers import AutoTokenizer, logging as hf_logging
 from rich.console import Console
 from rich.rule import Rule
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
 
 # Configuration
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -29,6 +27,7 @@ class LlamaClassifier:
         self.model_id = config.get("model_id", "meta-llama/Llama-3.1-8B-Instruct")
         self.max_tokens = config.get("max_new_tokens", 512)
         self.gpu_utilization = config.get("gpu_memory_utilization", 0.9)
+        self.max_model_len = config.get("max_model_len", 8192)
         
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
         self.llm = self._init_llm()
@@ -36,20 +35,20 @@ class LlamaClassifier:
         self.sampling_params = SamplingParams(
             temperature=0,
             max_tokens=self.max_tokens,
-            logprobs=1 
         )
 
     def _init_llm(self) -> LLM:
         """Initializes the vLLM engine."""
         console.print(f"[bold blue]Step 3:[/bold blue] Initializing vLLM model [cyan]{self.model_id}[/cyan]...")
         quantization = self.config.get("quantization", "none")
-        vllm_quant = quantization if quantization in ["awq", "gptq", "fp8", "marlin"] else None
+        vllm_quant = quantization if quantization in ["awq", "gptq", "fp8", "marlin", "compressed-tensors"] else None
         
         return LLM(
             model=self.model_id,
             trust_remote_code=True,
             quantization=vllm_quant,
             gpu_memory_utilization=self.gpu_utilization,
+            max_model_len=self.max_model_len,
             dtype="bfloat16" if torch.cuda.is_available() else "float32",
         )
 
@@ -75,66 +74,15 @@ class LlamaClassifier:
             prompts.append(prompt)
         return prompts
 
-    def _calculate_detailed_confidences(self, text: str, generated_output) -> Dict[str, float]:
-        """Calculates segmented confidence scores using token logprobs and offsets."""
-        token_ids = generated_output.token_ids
-        logprobs_list = generated_output.logprobs
-        
-        all_lps = []
-        for lp, tid in zip(logprobs_list, token_ids):
-            if lp and tid in lp:
-                all_lps.append(lp[tid].logprob)
-            else:
-                all_lps.append(0.0)
-
-        if not all_lps:
-            return {"conf_total": 0.0, "conf_rationale": 0.0, "conf_classification": 0.0}
-
-        encoding = self.tokenizer(text, return_offsets_mapping=True, add_special_tokens=False)
-        offsets = encoding['offset_mapping']
-        
-        json_start = text.find("```json")
-        if json_start == -1:
-            json_start = text.find("{")
-        if json_start == -1:
-            json_start = len(text)
-
-        match = re.search(r'"is_ai_related":\s*(true|false)', text)
-        class_start, class_end = (-1, -1)
-        if match:
-            class_start, class_end = match.start(1), match.end(1)
-
-        rationale_lps = []
-        classification_lps = []
-        
-        for i, (start, end) in enumerate(offsets):
-            if i >= len(all_lps): break
-            lp = all_lps[i]
-            if end <= json_start:
-                rationale_lps.append(lp)
-            if class_start != -1 and start >= class_start and end <= class_end:
-                classification_lps.append(lp)
-
-        def exp_mean(lps):
-            return float(np.exp(np.mean(lps))) if lps else 0.0
-
-        return {
-            "conf_total": exp_mean(all_lps),
-            "conf_rationale": exp_mean(rationale_lps),
-            "conf_classification": exp_mean(classification_lps)
-        }
-
     def process_batch(self, prompts: List[str]) -> List[Dict[str, Any]]:
         """Generates and parses responses for a batch of prompts."""
-        outputs = self.llm.generate(prompts, self.sampling_params, use_tqdm=False)
+        outputs = self.llm.generate(prompts, self.sampling_params, use_tqdm=True)
         results = []
         
         for output in outputs:
             generated_output = output.outputs[0]
             text = generated_output.text.strip()
-            conf_metrics = self._calculate_detailed_confidences(text, generated_output)
             parsed = self._parse_json(text)
-            parsed.update(conf_metrics)
             results.append(parsed)
             
         return results
@@ -202,37 +150,25 @@ def main():
     all_prompts = classifier.format_prompts(df_todo, prompt_template)
     chunk_size = config.get("chunk_size", 100)
     
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        TimeRemainingColumn(),
-        console=console
-    ) as progress:
-        task = progress.add_task("[yellow]Classifying...", total=len(all_prompts))
+    for i in range(0, len(all_prompts), chunk_size):
+        end = i + chunk_size
+        batch_prompts = all_prompts[i:end]
+        batch_indices = df_todo.index[i:end]
+        batch_rows = df_todo.iloc[i:end]
         
-        for i in range(0, len(all_prompts), chunk_size):
-            end = i + chunk_size
-            batch_prompts = all_prompts[i:end]
-            batch_indices = df_todo.index[i:end]
-            batch_rows = df_todo.iloc[i:end]
-            
-            results = classifier.process_batch(batch_prompts)
-            
-            new_data = []
-            for j, res in enumerate(results):
-                row_dict = batch_rows.iloc[j].to_dict()
-                row_dict.update(res)
-                new_data.append(pd.DataFrame([row_dict], index=[batch_indices[j]]))
-            
-            df_output = pd.concat([df_output] + new_data)
-            
-            temp_path = f"{output_path}.tmp"
-            df_output.to_parquet(temp_path)
-            os.replace(temp_path, output_path)
-            
-            progress.update(task, advance=len(batch_prompts))
+        results = classifier.process_batch(batch_prompts)
+        
+        new_data = []
+        for j, res in enumerate(results):
+            row_dict = batch_rows.iloc[j].to_dict()
+            row_dict.update(res)
+            new_data.append(pd.DataFrame([row_dict], index=[batch_indices[j]]))
+        
+        df_output = pd.concat([df_output] + new_data)
+        
+        temp_path = f"{output_path}.tmp"
+        df_output.to_parquet(temp_path)
+        os.replace(temp_path, output_path)
 
     console.print(Rule(title="[bold green]Pipeline Complete[/bold green]"))
 

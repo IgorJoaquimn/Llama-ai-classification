@@ -28,9 +28,9 @@ cat > ${CONFIG_FILE} <<EOF
 input_file: "tmp/test_input.parquet"
 output_file: "${OUTPUT_FILE}"
 prompt_file: "prompt.txt"
-model_id: "meta-llama/Llama-3.1-8B-Instruct"
+model_id: "Qwen/Qwen2.5-0.5B-Instruct"
 max_new_tokens: 256
-gpu_memory_utilization: 0.8
+gpu_memory_utilization: 0.5
 row_limit: 0
 chunk_size: 5
 EOF

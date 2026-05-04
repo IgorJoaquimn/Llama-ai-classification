@@ -1,16 +1,17 @@
 # AI Classification Configuration (vLLM)
 
 # File Paths
-input_file: "data/input/df_videos_transcript.parquet"
+input_file: "data/df_videos_transcript.parquet"
 output_file: "data/output/output_classification.parquet"
 prompt_file: "prompt.txt"
 
 # Model Configuration
-model_id: "meta-llama/Llama-3.1-8B-Instruct"
+model_id: "neuralmagic/Meta-Llama-3.1-8B-Instruct-FP8"
 max_new_tokens: 512
-quantization: "none" # options: awq, gptq, fp8, marlin, none
+quantization: "compressed-tensors" # options: awq, gptq, fp8, marlin, compressed-tensors, none
 
 # vLLM Performance Configuration
 gpu_memory_utilization: 0.9  # Use 90% of VRAM for KV cache
+max_model_len: 8192          # Limit context length to save VRAM
 chunk_size: 100              # Number of prompts to process before saving
 row_limit: 0                 # Max rows to process in a single run (0 for unlimited)

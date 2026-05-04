@@ -12,12 +12,10 @@ __pycache__/
 .pytest_cache/
 
 # Parquet Data Files (Inputs and Outputs)
+data.zip
+data/
 *.parquet
 *.csv
-data/input/*
-!data/input/.gitignore
-data/output/*
-!data/output/.gitignore
 
 # Configuration and Temporary Files
 config_test.yaml
