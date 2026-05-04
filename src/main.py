@@ -157,27 +157,54 @@ def main():
         # LLM Generation
         outputs = classifier.llm.generate(batch_prompts, classifier.sampling_params, use_tqdm=True)
         
-        new_data = []
+        batch_processed_data = []
         for j, output in enumerate(outputs):
             generated_text = output.outputs[0].text.strip()
             group_results = classifier._parse_json(generated_text)
             
-            # Ensure group_results is a list
-            if not isinstance(group_results, list):
-                group_results = []
-                
             original_group = batch_comment_groups[j]
-            for k, row in enumerate(original_group):
-                res = group_results[k] if k < len(group_results) else {}
-                row.update(res)
-                new_data.append(row)
+            
+            # Case 1: Individual classification (list of results)
+            if isinstance(group_results, list):
+                for k, row in enumerate(original_group):
+                    res = group_results[k] if k < len(group_results) else {}
+                    new_row = row.copy()
+                    new_row.update({
+                        "keywords": res.get("keywords", []),
+                        "topics": res.get("topics", []),
+                        "is_ai_related": res.get("is_ai_related", False),
+                        "is_ai_generated_content": res.get("is_ai_generated_content", False)
+                    })
+                    batch_processed_data.append(new_row)
+            # Case 2: Aggregate classification (single object for the whole batch)
+            elif isinstance(group_results, dict):
+                standardized_res = {
+                    "keywords": group_results.get("batch_keywords", group_results.get("keywords", [])),
+                    "topics": group_results.get("dominant_topics", group_results.get("topics", [])),
+                    "is_ai_related": group_results.get("is_ai_related", False),
+                    "is_ai_generated_content": group_results.get("is_ai_generated_content", False)
+                }
+                for row in original_group:
+                    new_row = row.copy()
+                    new_row.update(standardized_res)
+                    batch_processed_data.append(new_row)
+            # Case 3: Failed to parse or unexpected format
+            else:
+                for row in original_group:
+                    new_row = row.copy()
+                    new_row.update({
+                        "keywords": [], "topics": [], "is_ai_related": False, "is_ai_generated_content": False
+                    })
+                    batch_processed_data.append(new_row)
         
-        df_output = pd.concat([df_output, pd.DataFrame(new_data)], ignore_index=True)
-        
-        # Incremental save
-        temp_path = f"{output_path}.tmp"
-        df_output.to_parquet(temp_path, index=False)
-        os.replace(temp_path, output_path)
+        if batch_processed_data:
+            df_batch_results = pd.DataFrame(batch_processed_data)
+            df_output = pd.concat([df_output, df_batch_results], ignore_index=True)
+            
+            # Incremental save
+            temp_path = f"{output_path}.tmp"
+            df_output.to_parquet(temp_path, index=False)
+            os.replace(temp_path, output_path)
 
     console.print(Rule(title="[bold green]Pipeline Complete[/bold green]"))
 
