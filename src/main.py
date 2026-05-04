@@ -74,12 +74,13 @@ def main():
     console.print(Rule(title="[bold magenta]AI Comment Classification Pipeline[/bold magenta]"))
     
     # Load configuration
-    with open("config.yaml", "r") as f:
+    config_file = sys.argv[1] if len(sys.argv) > 1 else "config.yaml"
+    with open(config_file, "r") as f:
         config = yaml.safe_load(f)
     
     input_path = config.get("input_file", "data/comments_clean.parquet")
     output_path = config.get("output_file", "data/output/comment_classification.parquet")
-    prompt_file = config.get("prompt_file", "prompt_individual.txt")
+    prompt_file = config.get("prompt_file", "prompts/individual.txt")
     
     if not os.path.exists(input_path):
         console.print(f"[red]Error: {input_path} not found. Run preprocessing first.[/red]")

@@ -120,5 +120,5 @@ if __name__ == "__main__":
         'data/output/classification_individual.parquet',
         'data/videos/ai_related_pt.csv',
         'data/videos/ai_related_en.csv',
-        'report_individual.html'
+        'reports/report_individual.html'
     )

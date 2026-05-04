@@ -27,7 +27,7 @@ echo "Step 2: Creating test config: ${CONFIG_FILE}..."
 cat > ${CONFIG_FILE} <<EOF
 input_file: "tmp/test_input.parquet"
 output_file: "${OUTPUT_FILE}"
-prompt_file: "prompt.txt"
+prompt_file: "prompts/individual.txt"
 model_id: "Qwen/Qwen2.5-0.5B-Instruct"
 max_new_tokens: 256
 gpu_memory_utilization: 0.5
