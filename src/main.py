@@ -77,7 +77,7 @@ def main():
     
     input_path = config.get("input_file", "data/comments_clean.parquet")
     output_path = config.get("output_file", "data/output/comment_classification.parquet")
-    prompt_file = "prompt_individual.txt"
+    prompt_file = config.get("prompt_file", "prompt_individual.txt")
     
     if not os.path.exists(input_path):
         console.print(f"[red]Error: {input_path} not found. Run preprocessing first.[/red]")
@@ -90,6 +90,12 @@ def main():
     console.print(f"[blue]Loading {input_path}...[/blue]")
     df = pd.read_parquet(input_path)
     
+    # Apply row limit for smoke tests
+    row_limit = config.get("row_limit", 0)
+    if row_limit > 0:
+        df = df.head(row_limit)
+        console.print(f"[yellow]Limiting to {row_limit} comments for this run.[/yellow]")
+
     # Filter top 10 comments per video by like_count
     console.print("[blue]Filtering top 10 liked comments per video...[/blue]")
     df = df.sort_values(['video_id', 'like_count'], ascending=[True, False])
@@ -98,9 +104,14 @@ def main():
     # 2. Check for resume
     if os.path.exists(output_path):
         df_done = pd.read_parquet(output_path)
-        done_ids = df_done['comment_id'].unique()
-        df_todo = df_top[~df_top['comment_id'].isin(done_ids)].copy()
-        df_output = df_done
+        if 'comment_id' in df_done.columns:
+            done_ids = df_done['comment_id'].unique()
+            df_todo = df_top[~df_top['comment_id'].isin(done_ids)].copy()
+            df_output = df_done
+        else:
+            # If the output file doesn't have comment_id, we start over
+            df_todo = df_top
+            df_output = pd.DataFrame()
     else:
         df_todo = df_top
         df_output = pd.DataFrame()
@@ -109,12 +120,6 @@ def main():
     if len(df_todo) == 0:
         console.print("[green]All comments already processed![/green]")
         return
-
-    # Apply row limit for smoke tests
-    row_limit = config.get("row_limit", 0)
-    if row_limit > 0:
-        df_todo = df_todo.head(row_limit)
-        console.print(f"[yellow]Limiting to {row_limit} comments for this run.[/yellow]")
 
     # 3. Initialize Classifier
     classifier = LlamaClassifier(config)
