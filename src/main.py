@@ -75,7 +75,7 @@ def main():
     with open("config.yaml", "r") as f:
         config = yaml.safe_load(f)
     
-    input_path = "data/comments_clean.parquet"
+    input_path = config.get("input_file", "data/comments_clean.parquet")
     output_path = config.get("output_file", "data/output/comment_classification.parquet")
     prompt_file = "prompt_individual.txt"
     
