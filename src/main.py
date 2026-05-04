@@ -55,18 +55,20 @@ class LlamaClassifier:
     def _parse_json(self, text: str) -> Any:
         """Extracts and parses JSON from model output."""
         try:
-            if "```json" in text:
-                content = text.split("```json")[1].split("```")[0]
-            elif "```" in text:
-                content = text.split("```")[1].split("```")[0]
+            # 1. Try to find JSON in code blocks
+            json_match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
+            if json_match:
+                content = json_match.group(1).strip()
             else:
+                # 2. Try to find first [ or { and last ] or }
                 start = text.find('[') if '[' in text else text.find('{')
                 end = text.rfind(']') + 1 if ']' in text else text.rfind('}') + 1
                 content = text[start:end] if start != -1 else text
                 
             return json.loads(content.strip())
-        except Exception:
-            return []
+        except Exception as e:
+            console.print(f"[dim yellow]Warning: JSON parse failed: {e}. Raw text preview: {text[:100]}...[/dim yellow]")
+            return None
 
 def main():
     console.print(Rule(title="[bold magenta]AI Comment Classification Pipeline[/bold magenta]"))
@@ -164,7 +166,7 @@ def main():
             
             original_group = batch_comment_groups[j]
             
-            # Case 1: Individual classification (list of results)
+            # Individual classification (expects list of results)
             if isinstance(group_results, list):
                 for k, row in enumerate(original_group):
                     res = group_results[k] if k < len(group_results) else {}
@@ -176,24 +178,12 @@ def main():
                         "is_ai_generated_content": res.get("is_ai_generated_content", False)
                     })
                     batch_processed_data.append(new_row)
-            # Case 2: Aggregate classification (single object for the whole batch)
-            elif isinstance(group_results, dict):
-                standardized_res = {
-                    "keywords": group_results.get("batch_keywords", group_results.get("keywords", [])),
-                    "topics": group_results.get("dominant_topics", group_results.get("topics", [])),
-                    "is_ai_related": group_results.get("is_ai_related", False),
-                    "is_ai_generated_content": group_results.get("is_ai_generated_content", False)
-                }
-                for row in original_group:
-                    new_row = row.copy()
-                    new_row.update(standardized_res)
-                    batch_processed_data.append(new_row)
-            # Case 3: Failed to parse or unexpected format
+            # Failed to parse or unexpected format
             else:
                 for row in original_group:
                     new_row = row.copy()
                     new_row.update({
-                        "keywords": [], "topics": [], "is_ai_related": False, "is_ai_generated_content": False
+                        "keywords": [], "topics": [], "is_ai_related": False, "is_ai_generated_content": False, "raw_output": generated_text[:200]
                     })
                     batch_processed_data.append(new_row)
         

@@ -1,0 +1,498 @@
+
+    <html>
+    <head>
+        <title>AI Individual Classification Report</title>
+        <style>
+            body { font-family: sans-serif; margin: 20px; background-color: #f4f4f9; }
+            h1, h2 { color: #333; }
+            .container { max-width: 1200px; margin: auto; }
+            table { border-collapse: collapse; width: 100%; margin-bottom: 30px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+            th { background-color: #007bff; color: white; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            .ai-related-true { border-left: 5px solid #28a745; }
+            .ai-related-false { border-left: 5px solid #dc3545; }
+            .metadata { color: #666; font-size: 0.85em; }
+            .tag { 
+                display: inline-block; 
+                padding: 2px 8px; 
+                margin: 2px; 
+                border-radius: 12px; 
+                background: #e9ecef; 
+                font-size: 0.8em; 
+                color: #495057;
+            }
+            .video-header { 
+                background: #343a40; 
+                color: white; 
+                padding: 10px 15px; 
+                margin-top: 20px;
+                border-radius: 5px 5px 0 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>AI Individual Classification Report</h1>
+            <p>Showing classification results for top comments from 10 different videos.</p>
+    
+            <div class="video-header">
+                <strong>CyberDog 2 da Xiaomi</strong> | <span style="color: #ccc;">Tecnoblog</span>
+            </div>
+            <table>
+                <tr>
+                    <th style="width: 50%;">Comment Text</th>
+                    <th>AI Related</th>
+                    <th>Topics</th>
+                    <th>Keywords</th>
+                </tr>
+        
+                <tr class="ai-related-false">
+                    <td>Um "vira-latas" caramelo é insubstituível 😅😂</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['caramelo' 'insubstituível']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Os chineses são imparáveis!</td>
+                    <td>❌ No</td>
+                    <td>['geopolitical competition']</td>
+                    <td>['chineses' 'imparáveis']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>eu bicho que nem e vivo e so um monte de lata</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['lata' 'bicho']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Interessante para quem goste e queira deitar mais 3000 US$ para o lixo, porque a XIAOMI ignora por completo a assistência pós-venda, principalmente se for adquirido fora do mercado chinês, no EBAY e Aliexpress.</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['XIAOMI' 'assistência' 'pós-venda' 'EBAY' 'Aliexpress']</td>
+                </tr>
+            </table>
+            <div class="video-header">
+                <strong>Chatbots e tragédias: Os perigos da IA no comportamento humano</strong> | <span style="color: #ccc;">Olhar Digital</span>
+            </div>
+            <table>
+                <tr>
+                    <th style="width: 50%;">Comment Text</th>
+                    <th>AI Related</th>
+                    <th>Topics</th>
+                    <th>Keywords</th>
+                </tr>
+        
+                <tr class="ai-related-true">
+                    <td>Qualquer coisa pode ser usada de forma errada, principalmente se a pessoa for imbecil. Não é culpa da IA se o energúmeno usa ela como se fosse um oráculo que tem todas as respostas e nunca erra. Se o cara faz merda é culpa do próprio jumento que confunde um programa gerador de textos com a realidade ou culpa do responsável por esta pessoa que deixa ele sem supervisão, seria como dar um carro para alguém incapaz de usar da forma correta e depois processar a Volkswagen porque ele bateu no muro e morreu. Se você tem crianças em casa vc deixa uma faca afiada em cima da mesa? Deixa site pornô aberto no pc da sala? Então bota senha na porra do computador... Se vive sozinho, antes de usar a IA pergunte para a propria IA como ela funciona antes de se sentir "amiguinho" dela.</td>
+                    <td>✅ Yes</td>
+                    <td>['AI ethics' 'regulation and governance']</td>
+                    <td>['IA' 'oráculo' 'programa' 'gerador' 'textos' 'realidade' 'supervisão'
+ 'Volkswagen' 'carro' 'faca' 'pc' 'senha' 'computador']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>Isso me faz lembrar a I.A mentirosa do filme: "Uma odisséia no espaço".</td>
+                    <td>✅ Yes</td>
+                    <td>['creativity' 'misinformation and deepfakes']</td>
+                    <td>['IA' 'mentirosa' 'filme']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>O Hall não mentiu, ele "deduziu" que o homem prejudicaria a missão e tentou ele me na-lo.</td>
+                    <td>✅ Yes</td>
+                    <td>['regulation and governance' 'labor displacement']</td>
+                    <td>['Hall' 'deduziu' 'missão']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>Tramita na Câmara dos Deputados o PL 2338/2023, que regulamenta a IA no País,  justamente para tentar prevenir essa situação.  Qualquer pessoa pode acompanhar a tramitação no site da Câmara dos Deputados.</td>
+                    <td>✅ Yes</td>
+                    <td>['regulation and governance' 'scientific progress']</td>
+                    <td>['PL 2338/2023' 'IA' 'Câmara dos Deputados']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>me parece que essas pessoas já se matariam com ou sem o gpt</td>
+                    <td>✅ Yes</td>
+                    <td>['existential risk / AGI concerns' 'labor displacement']</td>
+                    <td>['gpt' 'matariam']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>Com certeza, as IAs em  certos caso funciona como um espelho amplificador. Isto é desastroso quando a interação é feita por usuário em desequilíbrio.</td>
+                    <td>✅ Yes</td>
+                    <td>['AI ethics' 'misinformation and deepfakes']</td>
+                    <td>['IAs' 'espelho amplificador' 'usuário em desequilíbrio']</td>
+                </tr>
+            </table>
+            <div class="video-header">
+                <strong>POR QUE PARECE QUE O AI PIN JÁ DEU ERRADO? - Parte 1 #Shorts</strong> | <span style="color: #ccc;">Canaltech</span>
+            </div>
+            <table>
+                <tr>
+                    <th style="width: 50%;">Comment Text</th>
+                    <th>AI Related</th>
+                    <th>Topics</th>
+                    <th>Keywords</th>
+                </tr>
+        
+                <tr class="ai-related-false">
+                    <td>Aqui o nome usual é mandioca.</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['mandioca' 'macaxeira']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Eu conheço o aipin como macaxeira</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['aipin' 'macaxeira']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>É pq vc é rico e sõ conhece a versão da Apple o Mac Axeira</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['Apple' 'Mac Axeira']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Talvez dentro de algumas decadas seja uma  tecnologia viavel</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['tecnologia' 'viavel']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>O nome😅 pelamor 😂😂😂😂😂</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['nome' 'pelamor']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Imagina o preço que isso vai ser pra ainda ser um treco inútil kkkkkk</td>
+                    <td>❌ No</td>
+                    <td>['everyday AI applications']</td>
+                    <td>['Aipin']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>O Aipin comida deu muito certo</td>
+                    <td>❌ No</td>
+                    <td>['everyday AI applications']</td>
+                    <td>['Aipin' 'comida']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>aipin é bom frito</td>
+                    <td>❌ No</td>
+                    <td>['everyday AI applications']</td>
+                    <td>['Aipin' 'frito']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Acho que é algo que vai aperfeiçoado ou algo na mesma linha de pensamento</td>
+                    <td>❌ No</td>
+                    <td>['everyday AI applications']</td>
+                    <td>['Aipin' 'aperfeiçoado']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Esse aipim e muito bom kkkkk</td>
+                    <td>❌ No</td>
+                    <td>['everyday AI applications']</td>
+                    <td>['Aipim']</td>
+                </tr>
+            </table>
+            <div class="video-header">
+                <strong>ESTAMOS FICANDO BURROS POR CAUSA DA INTELIGÊNCIA ARTIFICIAL?</strong> | <span style="color: #ccc;">Os Sócios Podcast</span>
+            </div>
+            <table>
+                <tr>
+                    <th style="width: 50%;">Comment Text</th>
+                    <th>AI Related</th>
+                    <th>Topics</th>
+                    <th>Keywords</th>
+                </tr>
+        
+                <tr class="ai-related-true">
+                    <td>Boa tarde. Nem presica de IA, no nosso mundo atual quem é minimamente inteligente é perseguido, odiado, no mundo de hoje é consenso ir junto com a manada, mesmo que esta manada está indo para o precipício.</td>
+                    <td>✅ Yes</td>
+                    <td>['labor displacement' 'regulation and governance']</td>
+                    <td>['IA' 'inteligente' 'perseguido' 'manada']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>Odeio o Google com essa tal inteligência artificial</td>
+                    <td>✅ Yes</td>
+                    <td>['regulation and governance']</td>
+                    <td>['Google' 'inteligência artificial']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>a televisão já fez isso.</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['televisão' 'fez isso']</td>
+                </tr>
+            </table>
+            <div class="video-header">
+                <strong>CHINA TESTA 6G INCRÍVEL! Novo GOLPE no Brasil; Windows XP e rival do ChatGPT!</strong> | <span style="color: #ccc;">TecMundo</span>
+            </div>
+            <table>
+                <tr>
+                    <th style="width: 50%;">Comment Text</th>
+                    <th>AI Related</th>
+                    <th>Topics</th>
+                    <th>Keywords</th>
+                </tr>
+        
+                <tr class="ai-related-false">
+                    <td>​​@kanaimah ela errou no comentário tbm kkkkkk</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['comentário' 'kkkkk']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>Lembro que nos testes do 5G no Brasil, há uns 6 anos, era fácil bater mais de 1Gbps. Mas quando chegou pra valer, a realidade foi bem diferente: mal chega a 300Mbps, e em muitas cidades não passa de 150Mbps. Agora vem o 6G dizendo que baixou 50GB em 1,4 segundos. Impressionante… nos testes. Porque na prática, como vimos com o 5G, a coisa muda bastante. Teste é uma coisa, realidade é outra. Que tal primeiro entregarem o que prometeram no 5G?</td>
+                    <td>✅ Yes</td>
+                    <td>['scientific progress' 'everyday AI applications']</td>
+                    <td>['5G' '6G' 'baixou' '50GB' '1,4 segundos']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>Tá perdoada 😁 você e a IA mais carismática que eu já vi 🫶🏽</td>
+                    <td>✅ Yes</td>
+                    <td>['creativity']</td>
+                    <td>['IA' 'carismática']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>500 km ou 500.000 metros</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['km' 'metros']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>A altura de um satélite geoestacionário é de aproximadamente 35.786 quilômetros acima da superfície da Terra.</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['satélite' 'geoestacionário' 'Terra']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>500 metros 😂 não faz isso kkkk</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['metros' 'kkkk']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Oxi, na minha cidade kkkkk6:06</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['cidade' 'kkkkk']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Tá Linda como sempre bb 🥰</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['Linda' 'bb']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>500 metros de altitude não dá né... Corrige essa informação...</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['altitude' 'metros' 'Corrige']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Mais uma noite com notícias maravilhosas, obrigada Amanda pelo carisma. 
+Meu primeiro celular foi o Nokia 2280, amava o jogo da motinha 😁</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['notícias' 'celular' 'Nokia' 'jogo']</td>
+                </tr>
+            </table>
+            <div class="video-header">
+                <strong>Por que você não deveria CONFIAR em IAs</strong> | <span style="color: #ccc;">Ciência Todo Dia</span>
+            </div>
+            <table>
+                <tr>
+                    <th style="width: 50%;">Comment Text</th>
+                    <th>AI Related</th>
+                    <th>Topics</th>
+                    <th>Keywords</th>
+                </tr>
+        
+                <tr class="ai-related-false">
+                    <td>Essa frase foi sinistra</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['sinistra']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>Queremos um video sobre como o chatgpt funciona na parte técnica</td>
+                    <td>✅ Yes</td>
+                    <td>['everyday AI applications' 'scientific progress']</td>
+                    <td>['chatgpt' 'funciona' 'técnica']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>Ou seja. IA é como horóscopo, ou pastores brasileiros com seu público específico</td>
+                    <td>✅ Yes</td>
+                    <td>['regulation and governance' 'misinformation and deepfakes']</td>
+                    <td>['IA' 'horóscopo' 'público']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>Não deve confiar mesmo, percebi isso quando pedi para criar um vídeo de 1 minuto cinematográfico baseado em um filme famoso, onde eu seria o protagonista, o  chatgpt, disse que podia fazer, e que precisava apenas da minha foto, ele fez várias perguntas sobre como eu queria o vídeo, "criou cenas, roteiro,falas" enviei minha foto, e durante mais conversas  o meu limite de menssagem esgotou, por causa de tanta pergunta e resposta, aí tentei continuar no outro dia, e foi a mesma coisa, me enrolou de todo jeito, até da o limite de menssagens e eu não poder mais enviar menssagens, ele promete fazer uma coisa que não faz, apenas fica ganhando tempo com um monte de pergunta sobre o projeto, sem falar as desculpas de que não consegue fazer isso ou aquilo dentro do chat, promete outras opções e não cumpri com nada, faz a gente de otário. Esse chatgpt é marmelada. Acho que a intenção dos criadores é apenas de lucrar iludindo as pessoas com falsa inteligência artificial que invés de inteligência está mais para "Picaretagem Artificial"</td>
+                    <td>✅ Yes</td>
+                    <td>['creativity' 'everyday AI applications']</td>
+                    <td>['chatgpt' 'vídeo' 'filme' 'roteiro' 'cenas' 'falas']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>@vivivamp5 kkk eu na vida</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['vivivamp5' 'kkk']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>7:12 literalmente depois disso apareceu um anuncio do Gemini pra mim kkkkk</td>
+                    <td>✅ Yes</td>
+                    <td>['everyday AI applications' 'misinformation and deepfakes']</td>
+                    <td>['anuncio' 'Gemini']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>Mais calculadora sabe matemática sim, melhor que nós inclusive 🤓</td>
+                    <td>✅ Yes</td>
+                    <td>['productivity and workplace efficiency' 'everyday AI applications']</td>
+                    <td>['calculadora' 'matemática']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Eu fiz isso e ainda faço... É para ser sincera também não tenho nada para esconder  kkkk.</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['sincera' 'esconder']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Refaz esse vídeo Pedro pfvr
+Quero muito saber como está hoje em dia</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['vídeo' 'Pedro' 'hoje']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>Quase um ano este vídeo, e continua cirurgicamente atual.
+As IAs se aperfeiçoam com novas habilidades a cada semana, mas ainda não romperam esta barreira da alucinação.</td>
+                    <td>✅ Yes</td>
+                    <td>['scientific progress' 'creativity']</td>
+                    <td>['vídeo' 'IAs' 'aperfeiçoam' 'alucinação']</td>
+                </tr>
+            </table>
+            <div class="video-header">
+                <strong>MANO... TO SEM PALAVRAS</strong> | <span style="color: #ccc;">Canal do Schwarza</span>
+            </div>
+            <table>
+                <tr>
+                    <th style="width: 50%;">Comment Text</th>
+                    <th>AI Related</th>
+                    <th>Topics</th>
+                    <th>Keywords</th>
+                </tr>
+        
+                <tr class="ai-related-true">
+                    <td>Essas coisas nas maos desse cara da ate.medo..</td>
+                    <td>✅ Yes</td>
+                    <td>['labor displacement']</td>
+                    <td>['cara' 'medo']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>O musk tem mesmo cara de vilão de filme de inteligência artificial kkkkkkk</td>
+                    <td>✅ Yes</td>
+                    <td>['regulation and governance' 'existential risk / AGI concerns']</td>
+                    <td>['Musk' 'vilão' 'inteligência' 'artificial']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>E colocando o Moska no lugar dele 👍</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['Moska' 'Magneto']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Deve dar ate emoção em ligar um fenômeno desse</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['fenômeno' 'emoção']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>já da pra aproveitar e criar outro supercomputador chamado Magneto</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['Magneto' 'supercomputador']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Você está insinuando que o Musk tirou a moderação do X?!?? 
+Em que universo paralelo você vive e isso aconteceu? Neste onde vivo ele implementou as Notas da Comunidade, que é uma forma muito eficiente e dinâmica de moderação e validação de posts.
+O que é um moderador pra você, é tipo um Felipe Neto patrocinado pela Blaze decidindo o que você deve pensar e o que é verdade? É uma rede social que se ajoelha pros desmandos do Xandão?</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['Musk' 'moderação' 'X' 'Notas da Comunidade']</td>
+                </tr>
+            
+                <tr class="ai-related-false">
+                    <td>Yellon do inglês significa: amarelo 
+Musk é um perfume barato da Avon
+Então significa: Perfume amarelo, pode cre!</td>
+                    <td>❌ No</td>
+                    <td>[]</td>
+                    <td>['Yellon' 'inglês' 'Musk' 'Avon' 'Perfume amarelo']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>​@OverlordUser simular e projetar medicamentos, engenharia, energia. Avanços na tecnologia e sociedade, não para jogar games. Então serviria para todos nós sim.</td>
+                    <td>✅ Yes</td>
+                    <td>['scientific progress']</td>
+                    <td>['medicamentos' 'engenharia' 'energia']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>Quem vai ser o pai da Skynet?</td>
+                    <td>✅ Yes</td>
+                    <td>['existential risk / AGI concerns']</td>
+                    <td>['Skynet']</td>
+                </tr>
+            
+                <tr class="ai-related-true">
+                    <td>Não se preocupem, esse computador é só um balão meteorológico.</td>
+                    <td>✅ Yes</td>
+                    <td>['everyday AI applications']</td>
+                    <td>['computador' 'meteorológico']</td>
+                </tr>
+            </table>
+        </div>
+    </body>
+    </html>
+    
