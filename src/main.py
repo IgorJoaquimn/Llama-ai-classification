@@ -20,7 +20,7 @@ hf_logging.set_verbosity_error()
 console = Console(force_terminal=True)
 
 class LlamaClassifier:
-    """Handles LLM-based classification using vLLM with granular confidence metrics."""
+    """Handles LLM-based classification using vLLM."""
     
     def __init__(self, config: Dict[str, Any]):
         self.config = config
@@ -52,42 +52,7 @@ class LlamaClassifier:
             dtype="bfloat16" if torch.cuda.is_available() else "float32",
         )
 
-    def format_prompts(self, df: pd.DataFrame, system_prompt: str) -> List[str]:
-        """Converts dataframe rows into chat-templated prompts."""
-        prompts = []
-        for _, row in df.iterrows():
-            title = str(row.get('title', 'Unknown Title'))
-            # Using transcript as "Description" since actual description column is missing
-            description = str(row.get('transcript', 'No description available'))[:4000]
-            
-            user_input = f"Title: {title}\nDescription: {description}"
-            
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_input}
-            ]
-            prompt = self.tokenizer.apply_chat_template(
-                messages, 
-                tokenize=False, 
-                add_generation_prompt=True
-            )
-            prompts.append(prompt)
-        return prompts
-
-    def process_batch(self, prompts: List[str]) -> List[Dict[str, Any]]:
-        """Generates and parses responses for a batch of prompts."""
-        outputs = self.llm.generate(prompts, self.sampling_params, use_tqdm=True)
-        results = []
-        
-        for output in outputs:
-            generated_output = output.outputs[0]
-            text = generated_output.text.strip()
-            parsed = self._parse_json(text)
-            results.append(parsed)
-            
-        return results
-
-    def _parse_json(self, text: str) -> Dict[str, Any]:
+    def _parse_json(self, text: str) -> Any:
         """Extracts and parses JSON from model output."""
         try:
             if "```json" in text:
@@ -95,79 +60,118 @@ class LlamaClassifier:
             elif "```" in text:
                 content = text.split("```")[1].split("```")[0]
             else:
-                start = text.find('{')
-                end = text.rfind('}') + 1
+                start = text.find('[') if '[' in text else text.find('{')
+                end = text.rfind(']') + 1 if ']' in text else text.rfind('}') + 1
                 content = text[start:end] if start != -1 else text
                 
             return json.loads(content.strip())
         except Exception:
-            return {
-                "summary": "Error parsing JSON", 
-                "keywords": [], 
-                "is_ai_related": None, 
-                "topics": [],
-                "raw_output": text[:1000]
-            }
-
-def load_file(path: str) -> str:
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"File not found: {path}")
-    with open(path, "r") as f:
-        return f.read()
+            return []
 
 def main():
-    console.print(Rule(title="[bold magenta]AI Classification Pipeline[/bold magenta]"))
+    console.print(Rule(title="[bold magenta]AI Comment Classification Pipeline[/bold magenta]"))
     
-    config_path = sys.argv[1] if len(sys.argv) > 1 else "config.yaml"
-    with open(config_path, "r") as f:
+    # Load configuration
+    with open("config.yaml", "r") as f:
         config = yaml.safe_load(f)
     
-    prompt_template = load_file(config.get("prompt_file", "prompt.txt"))
-    input_path = config.get("input_file", "data/input/df_videos_transcript.parquet")
-    output_path = config.get("output_file", "data/output/output_classification.parquet")
+    input_path = "data/comments_clean.parquet"
+    output_path = config.get("output_file", "data/output/comment_classification.parquet")
+    prompt_file = "prompt_individual.txt"
     
-    classifier = LlamaClassifier(config)
+    if not os.path.exists(input_path):
+        console.print(f"[red]Error: {input_path} not found. Run preprocessing first.[/red]")
+        return
+        
+    with open(prompt_file, "r") as f:
+        prompt_template = f.read()
+
+    # 1. Load and Filter Data
+    console.print(f"[blue]Loading {input_path}...[/blue]")
+    df = pd.read_parquet(input_path)
     
-    df_input = pd.read_parquet(input_path)
+    # Filter top 10 comments per video by like_count
+    console.print("[blue]Filtering top 10 liked comments per video...[/blue]")
+    df = df.sort_values(['video_id', 'like_count'], ascending=[True, False])
+    df_top = df.groupby('video_id').head(10).copy()
+    
+    # 2. Check for resume
     if os.path.exists(output_path):
-        df_output = pd.read_parquet(output_path)
-        processed_ids = df_output.index.tolist()
+        df_done = pd.read_parquet(output_path)
+        done_ids = df_done['comment_id'].unique()
+        df_todo = df_top[~df_top['comment_id'].isin(done_ids)].copy()
+        df_output = df_done
     else:
+        df_todo = df_top
         df_output = pd.DataFrame()
-        processed_ids = []
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    df_todo = df_input[~df_input.index.isin(processed_ids)]
-    
-    limit = config.get("row_limit", 1000)
-    if limit and not df_todo.empty:
-        df_todo = df_todo.head(limit)
-        console.print(f"[yellow]Processing next {len(df_todo)} rows...[/yellow]")
-
-    if df_todo.empty:
-        console.print("[bold green]All transcripts processed![/bold green]")
+    if len(df_todo) == 0:
+        console.print("[green]All comments already processed![/green]")
         return
 
-    all_prompts = classifier.format_prompts(df_todo, prompt_template)
-    chunk_size = config.get("chunk_size", 100)
+    # Apply row limit for smoke tests
+    row_limit = config.get("row_limit", 0)
+    if row_limit > 0:
+        df_todo = df_todo.head(row_limit)
+        console.print(f"[yellow]Limiting to {row_limit} comments for this run.[/yellow]")
+
+    # 3. Initialize Classifier
+    classifier = LlamaClassifier(config)
     
-    for i in range(0, len(all_prompts), chunk_size):
-        end = i + chunk_size
-        batch_prompts = all_prompts[i:end]
-        batch_indices = df_todo.index[i:end]
-        batch_rows = df_todo.iloc[i:end]
+    # 4. Processing Loop
+    # We group comments into batches of N to match the prompt_individual.txt format
+    BATCH_LLM_SIZE = 5 
+    chunk_size = config.get("chunk_size", 100) # LLM calls before saving
+    
+    all_rows = df_todo.to_dict('records')
+    
+    for i in range(0, len(all_rows), BATCH_LLM_SIZE * chunk_size):
+        current_slice = all_rows[i : i + BATCH_LLM_SIZE * chunk_size]
         
-        results = classifier.process_batch(batch_prompts)
+        batch_prompts = []
+        batch_comment_groups = []
+        
+        for j in range(0, len(current_slice), BATCH_LLM_SIZE):
+            group = current_slice[j : j + BATCH_LLM_SIZE]
+            batch_comment_groups.append(group)
+            
+            comments_text = "\n".join([f"{k+1}. \"{c['text']}\"" for k, c in enumerate(group)])
+            
+            messages = [
+                {"role": "system", "content": prompt_template},
+                {"role": "user", "content": f"Comments:\n{comments_text}"}
+            ]
+            prompt = classifier.tokenizer.apply_chat_template(
+                messages, 
+                tokenize=False, 
+                add_generation_prompt=True
+            )
+            batch_prompts.append(prompt)
+            
+        # LLM Generation
+        outputs = classifier.llm.generate(batch_prompts, classifier.sampling_params, use_tqdm=True)
         
         new_data = []
-        for j, res in enumerate(results):
-            row_dict = batch_rows.iloc[j].to_dict()
-            row_dict.update(res)
-            new_data.append(pd.DataFrame([row_dict], index=[batch_indices[j]]))
+        for j, output in enumerate(outputs):
+            generated_text = output.outputs[0].text.strip()
+            group_results = classifier._parse_json(generated_text)
+            
+            # Ensure group_results is a list
+            if not isinstance(group_results, list):
+                group_results = []
+                
+            original_group = batch_comment_groups[j]
+            for k, row in enumerate(original_group):
+                res = group_results[k] if k < len(group_results) else {}
+                row.update(res)
+                new_data.append(row)
         
-        df_output = pd.concat([df_output] + new_data)
+        df_output = pd.concat([df_output, pd.DataFrame(new_data)], ignore_index=True)
         
+        # Incremental save
         temp_path = f"{output_path}.tmp"
-        df_output.to_parquet(temp_path)
+        df_output.to_parquet(temp_path, index=False)
         os.replace(temp_path, output_path)
 
     console.print(Rule(title="[bold green]Pipeline Complete[/bold green]"))
